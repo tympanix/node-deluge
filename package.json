@@ -13,7 +13,6 @@
   "author": "tympanix <tympanix@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "form-data": "^2.3.3",
     "request": "^2.88.0"
   },
   "devDependencies": {

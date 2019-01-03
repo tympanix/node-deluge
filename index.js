@@ -1,8 +1,6 @@
 const request = require('request')
 const url = require('url')
-const path = require('path')
 const fs = require('fs')
-const FormData = require('form-data')
 
 
 function Deluge(option) {
