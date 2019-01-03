@@ -112,26 +112,40 @@ Deluge.prototype._upload = function(torrent, cb) {
     }
 }
 
+Deluge.prototype._addTorrent = function(path, config, cb) {
+    const options = Object.assign({
+        file_priorities: [],
+        add_paused: false,
+        compact_allocation: false,
+        max_connections: -1,
+        max_download_speed: -1,
+        max_upload_slots: -1,
+        max_upload_speed: -1,
+        prioritize_first_last_pieces: false,
+    }, config);
+    this.rpc('web.add_torrents', [[{
+        path,
+        options,
+    }]], cb)
+}
+
 Deluge.prototype.addTorrent = function(torrent, config, cb) {
     this._upload(torrent, function(err, res, body) {
         if (err) {
             return cb(...arguments)
         }
         const path = body.files[0];
-        const options = Object.assign({
-            file_priorities: [],
-            add_paused: false,
-            compact_allocation: false,
-            max_connections: -1,
-            max_download_speed: -1,
-            max_upload_slots: -1,
-            max_upload_speed: -1,
-            prioritize_first_last_pieces: false,
-        }, config);
-        this.rpc('web.add_torrents', [[{
-            path,
-            options,
-        }]], cb)
+        this._addTorrent(path, config, cb)
+    }.bind(this))
+}
+
+Deluge.prototype.addTorrentURL = function(url, config, cb) {
+    this.rpc('web.download_torrent_from_url', [url, ''], function(err, res, body) {
+        if (err) {
+            return cb(...arguments)
+        }
+        const path = body.result
+        this._addTorrent(path, config, cb)
     }.bind(this))
 }
 
