@@ -1,7 +1,7 @@
 {
   "name": "node-deluge",
   "version": "0.1.0",
-  "description": "A client implementation for deluge API",
+  "description": "A client implementation of Deluge API",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,5 +19,13 @@
   "devDependencies": {
     "dotenv": "^6.2.0",
     "request-debug": "^0.2.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tympanix/node-deluge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tympanix/node-deluge/issues"
+  },
+  "homepage": "https://github.com/tympanix/node-deluge#readme"
 }
