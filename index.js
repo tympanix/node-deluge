@@ -88,23 +88,51 @@ Deluge.prototype.getTorrents = function(cb) {
     this.rpc('web.update_ui', [fields, {}], cb)
 }
 
-Deluge.prototype.addTorrent = function(torrent, cb) {
-    const form = new FormData();
-    if (typeof torrent === 'string') {
-      if (fs.existsSync(torrent)) {
-        form.append('file', Buffer.from(fs.readFileSync(torrent)));
-      } else {
-        form.append('file', Buffer.from(torrent, 'base64'));
-      }
-    } else {
-      form.append('file', torrent);
-    }
-
-    request(Object.assign({}, this.config, {
+Deluge.prototype._upload = function(torrent, cb) {
+    let r = request(Object.assign({}, this.config, {
         method: 'POST',
         url: this.url('upload'),
-        form: form,
+        json: true,
+        gzip: true,
     }), cb)
+
+    const config = {
+        contentType: 'application/x-bittorrent'
+    }
+
+    const form = r.form();
+    if (typeof torrent === 'string') {
+      if (fs.existsSync(torrent)) {
+        form.append('file', Buffer.from(fs.readFileSync(torrent)), config);
+      } else {
+        form.append('file', Buffer.from(torrent, 'base64'), config);
+      }
+    } else {
+      form.append('file', torrent, config);
+    }
+}
+
+Deluge.prototype.addTorrent = function(torrent, config, cb) {
+    this._upload(torrent, function(err, res, body) {
+        if (err) {
+            return cb(...arguments)
+        }
+        const path = body.files[0];
+        const options = Object.assign({
+            file_priorities: [],
+            add_paused: false,
+            compact_allocation: false,
+            max_connections: -1,
+            max_download_speed: -1,
+            max_upload_slots: -1,
+            max_upload_speed: -1,
+            prioritize_first_last_pieces: false,
+        }, config);
+        this.rpc('web.add_torrents', [[{
+            path,
+            options,
+        }]], cb)
+    }.bind(this))
 }
 
 Deluge.prototype._doAction = function(method, hash, params, cb) {
