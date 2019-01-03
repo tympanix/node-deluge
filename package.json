@@ -1,0 +1,23 @@
+{
+  "name": "node-deluge",
+  "version": "0.1.0",
+  "description": "A client implementation for deluge API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "deluge",
+    "api"
+  ],
+  "author": "tympanix <tympanix@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "form-data": "^2.3.3",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {
+    "dotenv": "^6.2.0",
+    "request-debug": "^0.2.0"
+  }
+}
