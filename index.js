@@ -141,6 +141,9 @@ Deluge.prototype._addTorrent = function(path, config, cb) {
 }
 
 Deluge.prototype.addTorrent = function(torrent, config, cb) {
+    if (!Buffer.isBuffer(torrent)) {
+        torrent = Buffer.from(torrent)
+    }
     this._upload(torrent, function(err, res, body) {
         if (err) {
             return cb(...arguments)
@@ -163,6 +166,23 @@ Deluge.prototype.addTorrentURL = function(url, config, cb) {
 Deluge.prototype._doAction = function(method, hash, params, cb) {
     let torrents = Array.isArray(hash) ? hash : [hash]
     this._rpc(method, [torrents, ...params], this.handleError(cb))
+}
+
+/*
+ * For RPC calls not supporting multiple torrent hashes this may be used.
+ * It will call the RPC call once for every torrent hash provided
+*/
+Deluge.prototype._doMultiAction = function(method, hash, params, cb) {
+    let torrents = Array.isArray(hash) ? hash : [hash]
+    let counter = 0
+    for (let hash of torrents) {
+        this._rpc(method, [hash, ...params], this.handleError(function() {
+            counter ++
+            if (torrents.length === counter) {
+                cb(...arguments)
+            }
+        }.bind(this)))
+    }
 }
 
 Deluge.prototype.pause = function(hash, cb) {
@@ -193,12 +213,14 @@ Deluge.prototype.queueDown = function(hash, cb) {
     this._doAction('core.queue_down', hash, [], cb)
 }
 
+/* N.B. will call API once for every torrent provided */
 Deluge.prototype.remove = function(hash, cb) {
-    this._doAction('core.remove_torrent', hash, [false], cb)
+    this._doMultiAction('core.remove_torrent', hash, [false], cb)
 }
 
+/* N.B. will call API once for every torrent provided */
 Deluge.prototype.removeAndDelete = function(hash, cb) {
-    this._doAction('core.remove_torrent', hash, [true], cb)
+    this._doMultiAction('core.remove_torrent', hash, [true], cb)
 }
 
 module.exports = Deluge
