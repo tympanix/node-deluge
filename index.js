@@ -34,7 +34,7 @@ Deluge.prototype.url = function(path) {
     return url.resolve(this.baseurl.toString(), path)
 }
 
-Deluge.prototype.rpc = function(method, params, cb) {
+Deluge.prototype._rpc = function(method, params, cb) {
     request(Object.assign({}, this.options, {
         method: 'POST',
         json: true,
@@ -48,13 +48,26 @@ Deluge.prototype.rpc = function(method, params, cb) {
     }), cb)
 }
 
+Deluge.prototype.handleError = function(cb) {
+    return function(err, res, body) {
+        if (err) {
+            /* let the error through */
+        } else if (!res || !res.statusCode === 200) {
+            err = new Error('Invalid response from deluge API')
+        } else if (body && body.error !== null) {
+            err = new Error(body.error)
+        }
+        cb(err, body && body.result)
+    }
+}
+
 Deluge.prototype.login = function(cb) {
-    this.rpc('auth.login', [this.pass], function(err, res, body) {
+    this._rpc('auth.login', [this.pass], function(err, res, body) {
         if (!res || !res.headers.hasOwnProperty('set-cookie')) {
             err = new Error('Invalid password')
         }
-        cb(...arguments)
-    })
+        this.handleError(cb)(...arguments)
+    }.bind(this))
 }
 
 Deluge.prototype.getTorrents = function(cb) {
@@ -83,7 +96,7 @@ Deluge.prototype.getTorrents = function(cb) {
         'tracker_host',
         'upload_payload_rate',
     ]
-    this.rpc('web.update_ui', [fields, {}], cb)
+    this._rpc('web.update_ui', [fields, {}], this.handleError(cb))
 }
 
 Deluge.prototype._upload = function(torrent, cb) {
@@ -121,7 +134,7 @@ Deluge.prototype._addTorrent = function(path, config, cb) {
         max_upload_speed: -1,
         prioritize_first_last_pieces: false,
     }, config);
-    this.rpc('web.add_torrents', [[{
+    this._rpc('web.add_torrents', [[{
         path,
         options,
     }]], cb)
@@ -133,23 +146,23 @@ Deluge.prototype.addTorrent = function(torrent, config, cb) {
             return cb(...arguments)
         }
         const path = body.files[0];
-        this._addTorrent(path, config, cb)
+        this._addTorrent(path, config, this.handleError(cb))
     }.bind(this))
 }
 
 Deluge.prototype.addTorrentURL = function(url, config, cb) {
-    this.rpc('web.download_torrent_from_url', [url, ''], function(err, res, body) {
+    this._rpc('web.download_torrent_from_url', [url, ''], function(err, res, body) {
         if (err) {
             return cb(...arguments)
         }
         const path = body.result
-        this._addTorrent(path, config, cb)
+        this._addTorrent(path, config, this.handleError(cb))
     }.bind(this))
 }
 
 Deluge.prototype._doAction = function(method, hash, params, cb) {
     let torrents = Array.isArray(hash) ? hash : [hash]
-    this.rpc(method, [torrents, ...params], cb)
+    this._rpc(method, [torrents, ...params], this.handleError(cb))
 }
 
 Deluge.prototype.pause = function(hash, cb) {
