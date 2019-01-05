@@ -55,7 +55,7 @@ Deluge.prototype.handleError = function(cb) {
         } else if (!res || !res.statusCode === 200) {
             err = new Error('Invalid response from deluge API')
         } else if (body && body.error !== null) {
-            err = new Error(body.error)
+            err = new Error(body.error.message)
         }
         cb(err, body && body.result)
     }
@@ -68,6 +68,24 @@ Deluge.prototype.login = function(cb) {
         }
         this.handleError(cb)(...arguments)
     }.bind(this))
+}
+
+Deluge.prototype.getHosts = function(cb) {
+    this._rpc('web.get_hosts', [], this.handleError(cb))
+}
+
+Deluge.prototype._connect = function(hostId, cb) {
+    this._rpc('web.connect', [hostId], this.handleError(cb))
+}
+
+Deluge.prototype.connect = function(hostId, cb) {
+    if (typeof hostId === 'number') {
+        this.getHosts(function(err, res) {
+            this._connect(res[hostId][0], cb)
+        }.bind(this))
+    } else {
+        this._connect(hostId, cb)
+    }
 }
 
 Deluge.prototype.getTorrents = function(cb) {

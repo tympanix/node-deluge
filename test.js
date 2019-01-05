@@ -9,9 +9,7 @@ var d = new Deluge({
 })
 
 d.login((err) => {
-    d.getTorrents((err, res, body) => {
-        d.getTorrents((err, res, body) => {
-            console.log('Done.')
-        })
+    d.connect(0, function(err, res) {
+        console.log(err, res)
     })
 })
