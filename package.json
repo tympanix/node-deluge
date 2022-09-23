@@ -1,6 +1,6 @@
 {
   "name": "@electorrent/node-deluge",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A client implementation of Deluge API",
   "main": "index.js",
   "scripts": {
