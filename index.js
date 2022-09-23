@@ -63,7 +63,9 @@ Deluge.prototype.handleError = function(cb) {
 
 Deluge.prototype.login = function(cb) {
     this._rpc('auth.login', [this.pass], function(err, res, body) {
-        if (!res || !res.headers.hasOwnProperty('set-cookie')) {
+        if (err) {
+            /* let the error trough */
+        } else if (!res || !res.headers.hasOwnProperty('set-cookie')) {
             err = new Error('Invalid password')
         }
         this.handleError(cb)(...arguments)
