@@ -76,6 +76,14 @@ Deluge.prototype.getHosts = function(cb) {
     this._rpc('web.get_hosts', [], this.handleError(cb))
 }
 
+Deluge.prototype.getConfig = function(cb) {
+    this._rpc('web.get_config', [], this.handleError(cb))
+}
+
+Deluge.prototype.getCoreConfigValues = function(keys, cb) {
+    this._rpc('core.get_config_values', [keys], this.handleError(cb))
+}
+
 Deluge.prototype._connect = function(hostId, cb) {
     this._rpc('web.connect', [hostId], this.handleError(cb))
 }
@@ -160,6 +168,27 @@ Deluge.prototype._addTorrent = function(path, config, cb) {
     }]], cb)
 }
 
+Deluge.prototype._isMagnetURL = function(uri) {
+    return typeof uri === 'string' && uri.toLowerCase().startsWith('magnet:?')
+}
+
+Deluge.prototype._resolveMagnetConfig = function(config, cb) {
+    if (config && config.download_location) {
+        return cb(null, config)
+    }
+    this.getCoreConfigValues(['download_location'], function(err, coreConfig) {
+        if (err) {
+            return cb(err)
+        }
+        if (!coreConfig || !coreConfig.download_location) {
+            return cb(new Error('Missing download location in Deluge core config'))
+        }
+        cb(null, Object.assign({
+            download_location: coreConfig.download_location,
+        }, config))
+    })
+}
+
 Deluge.prototype.addTorrent = function(torrent, config, cb) {
     if (!Buffer.isBuffer(torrent)) {
         torrent = Buffer.from(torrent)
@@ -174,6 +203,18 @@ Deluge.prototype.addTorrent = function(torrent, config, cb) {
 }
 
 Deluge.prototype.addTorrentURL = function(url, config, cb) {
+    if (typeof config === 'function') {
+        cb = config
+        config = undefined
+    }
+    if (this._isMagnetURL(url)) {
+        return this._resolveMagnetConfig(config, function(err, resolvedConfig) {
+            if (err) {
+                return cb(err)
+            }
+            this._addTorrent(url, resolvedConfig, this.handleError(cb))
+        }.bind(this))
+    }
     this._rpc('web.download_torrent_from_url', [url, ''], function(err, res, body) {
         if (err) {
             return cb(...arguments)
